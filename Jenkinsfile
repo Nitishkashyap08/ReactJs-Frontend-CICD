@@ -1,93 +1,53 @@
-
 pipeline {
     agent any
 
-    tools {
-        jdk 'Jdk17'
-        nodejs 'node23'
-    }
-
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
-        DOCKER_IMAGE = "sriraju12/frontend-app:${BUILD_NUMBER}"
+        DOCKER_HUB_CREDENTIALS = credentials('dockerHubCred') // Your Jenkins Docker Hub credentials ID
+        IMAGE_NAME = "nitishkashyap08/react-app"
+        IMAGE_TAG = "latest"
     }
 
     stages {
-
-        stage('Clean Workspace') {
+        stage('Clone') {
             steps {
-                cleanWs()
-            }
-
-        }
-
-        stage('Git Code Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/sriraju12/ReactJs-Frontend-CICD.git'
+                checkout scm
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Build') {
+            steps {
+                sh 'npm install'
+                sh 'npm run build'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'npm test -- --watchAll=false'
+            }
+        }
+
+        stage('Docker Build & Push') {
             steps {
                 script {
-                    withSonarQubeEnv('sonar-server') {
-                        sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=frontend-app \
-                        -Dsonar.projectKey=frontend-app '''
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerHubCred') {
+                        def appImage = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                        appImage.push()
                     }
                 }
             }
         }
+    }
 
-       stage('Quality Gate Check') {
-            steps {
-                waitForQualityGate abortPipeline: false, credentialsId: 'sonar-secret'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Trivy Scan For File System') {
-            steps {
-                sh "trivy fs --format table -o trivy-files-report.html ."
-            }
-        }
-
-        stage('Build and Push Docker Image') {
-          environment {
-             REGISTRY_CREDENTIALS = credentials('dockerhub-secret')
-            }
-          steps {
-            script {
-              sh 'docker context use default'  
-              sh "docker build -t ${DOCKER_IMAGE} ."
-              def dockerImage = docker.image("${DOCKER_IMAGE}")
-              docker.withRegistry('https://index.docker.io/v1/', "dockerhub-secret") {
-                  dockerImage.push()
-                }
-            }
-          }
-        }
-
-        stage('Scan Docker Image') {
-            steps {
-                sh "trivy image --format table -o trivy-image-report.html ${DOCKER_IMAGE}"
-            }
-        }
-    } 
     post {
-     always {
-        emailext attachLog: true,
-            subject: "'${currentBuild.result}'",
-            body: "Project: ${env.JOB_NAME}<br/>" +
-                "Build Number: ${env.BUILD_NUMBER}<br/>" +
-                "URL: ${env.BUILD_URL}<br/>",
-            to: 'rajukrishnamsetty9@gmail.com',                                
-            attachmentsPattern: 'trivy-files-report.html,trivy-image-report.html'
+        always {
+            echo 'Pipeline finished.'
         }
-    }  
+        success {
+            echo 'Build, test, and push successful!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
 }
-
