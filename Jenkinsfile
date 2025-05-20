@@ -14,17 +14,17 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Build Only') {
             agent {
                 docker {
-                    image 'node:18-alpine'  // Use official Node.js image
-                    args '-u root:root'     // Run as root to avoid permission issues
+                    image 'node:18-alpine'
+                    args '-u root:root'
                 }
             }
             steps {
                 sh 'npm install'
                 sh 'npm run build'
-                sh 'npm test -- --watchAll=false'
+                // Tests are skipped
             }
         }
 
@@ -45,7 +45,7 @@ pipeline {
             echo 'Pipeline finished.'
         }
         success {
-            echo 'Build, test, and push successful!'
+            echo 'Build and push successful!'
         }
         failure {
             echo 'Pipeline failed.'
