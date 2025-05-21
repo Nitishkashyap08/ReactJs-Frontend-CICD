@@ -35,6 +35,7 @@ pipeline {
                     sh 'sudo docker build -t ${DOCKER_NAME}/my-app:latest .'
                  sh 'echo $DOCKER_PASS | sudo docker login -u $DOCKER_NAME --password-stdin'
                  sh 'sudo docker push $DOCKER_NAME/my-app:latest'
+                  
 
                 }
             }
