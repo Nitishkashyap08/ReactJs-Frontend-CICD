@@ -32,8 +32,10 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'DockerCredId', usernameVariable: 'DOCKER_NAME', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_NAME --password-stdin'
-                    sh 'docker push $DOCKER_NAME/my-app:latest'
+                    sh 'sudo docker build -t ${DOCKER_NAME}/my-app:latest .'
+                 sh 'echo $DOCKER_PASS | sudo docker login -u $DOCKER_NAME --password-stdin'
+                 sh 'sudo docker push $DOCKER_NAME/my-app:latest'
+
                 }
             }
         }
