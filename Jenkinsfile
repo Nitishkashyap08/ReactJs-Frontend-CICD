@@ -1,7 +1,7 @@
 pipeline{
     agent any
     tools{
-        maven 'mymaven'
+        nodejs 'mynodejs'
     }
     stages{
         stage('clone'){
