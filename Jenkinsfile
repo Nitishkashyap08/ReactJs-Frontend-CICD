@@ -3,6 +3,7 @@ pipeline {
 
     tools {
         nodejs 'mynodejs'
+        jdk 'jdk11'
     }
 
     environment {
