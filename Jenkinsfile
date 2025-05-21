@@ -1,54 +1,24 @@
-pipeline {
+pipeline{
     agent any
-
-    environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerHubCred')
-        IMAGE_NAME = "nitishkashyap08/react-app"
-        IMAGE_TAG = "latest"
+    tools{
+        maven 'mymaven'
     }
-
-    stages {
-        stage('Clone') {
-            steps {
-                checkout scm
+    stages{
+        stage('clone'){
+            steps{
+                git url : "https://github.com/Nitishkashyap08/ReactJs-Frontend-CICD.git" ,branch : "main"
             }
         }
-
-        stage('Build Only') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    args '-u root:root'
-                }
-            }
-            steps {
-                sh 'npm install'
-                sh 'npm run build'
-                // Tests are skipped
+        stage('build'){
+            steps{
+            sh 'npm build'
+            sh 'npm install'
             }
         }
-
-        stage('Docker Build & Push') {
-            steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerHubCred') {
-                        def appImage = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
-                        appImage.push()
-                    }
-                }
+        stage('test'){
+            steps{
+                sh 'npm test'
             }
-        }
-    }
-
-    post {
-        always {
-            echo 'Pipeline finished.'
-        }
-        success {
-            echo 'Build and push successful!'
-        }
-        failure {
-            echo 'Pipeline failed.'
         }
     }
 }
